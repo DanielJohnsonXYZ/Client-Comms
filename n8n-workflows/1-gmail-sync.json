@@ -1,0 +1,137 @@
+{
+  "name": "Client Intelligence - Gmail Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "id": "schedule-trigger"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "attachments": false,
+          "format": "simple"
+        }
+      },
+      "name": "Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [470, 300],
+      "id": "gmail-node",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIALS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.from}}",
+              "operation": "contains",
+              "value2": "@"
+            }
+          ]
+        }
+      },
+      "name": "Filter Valid Emails",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [690, 300],
+      "id": "filter-node"
+    },
+    {
+      "parameters": {
+        "url": "={{$env.APP_URL}}/api/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"client_email\": \"{{$json.from}}\",\n  \"from_email\": \"{{$json.from}}\",\n  \"to_email\": \"{{$json.to}}\",\n  \"subject\": \"{{$json.subject}}\",\n  \"body\": \"{{$json.textPlain || $json.textHtml}}\",\n  \"body_snippet\": \"{{$json.snippet}}\",\n  \"timestamp\": \"{{$json.date}}\",\n  \"thread_id\": \"{{$json.threadId}}\",\n  \"message_id\": \"{{$json.id}}\",\n  \"source\": \"gmail\",\n  \"metadata\": {\n    \"gmail_id\": \"{{$json.id}}\",\n    \"labels\": {{$json.labelIds}}\n  }\n}",
+        "options": {}
+      },
+      "name": "Send to API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [910, 300],
+      "id": "http-request-node"
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        [
+          {
+            "node": "Filter Valid Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Valid Emails": {
+      "main": [
+        [
+          {
+            "node": "Send to API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-31T00:00:00.000Z",
+  "versionId": "1"
+}

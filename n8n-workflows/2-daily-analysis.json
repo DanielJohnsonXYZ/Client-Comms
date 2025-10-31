@@ -1,0 +1,110 @@
+{
+  "name": "Client Intelligence - Daily Analysis",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Every Day at 6 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300],
+      "id": "cron-trigger"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.APP_URL}}/api/analyze-all",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "={{$env.N8N_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Trigger Analysis",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [470, 300],
+      "id": "http-request-node"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.success}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Check Success",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [690, 300],
+      "id": "filter-success"
+    },
+    {
+      "parameters": {
+        "content": "=✅ Daily Analysis Complete!\n\n📊 Results:\n- Total Clients: {{$json.total_clients}}\n- Analyzed: {{$json.analyzed}}\n- Skipped: {{$json.skipped}}\n- Errors: {{$json.errors}}\n\n🔗 View Digest: {{$env.APP_URL}}/digest",
+        "options": {}
+      },
+      "name": "Success Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [910, 300],
+      "id": "sticky-note"
+    }
+  ],
+  "connections": {
+    "Every Day at 6 AM": {
+      "main": [
+        [
+          {
+            "node": "Trigger Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Analysis": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-31T00:00:00.000Z",
+  "versionId": "1"
+}
